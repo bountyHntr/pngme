@@ -1,8 +1,9 @@
 use std::fmt;
 use std::convert::TryFrom;
 use std::str::{self, FromStr};
-use crate::Error;
+use crate::{Error, Result};
 
+/// Error that may occur when creating ChunkType if it does not satisfy the properties specified in the PNG spec
 #[derive(Debug,Clone)]
 pub struct ChunkTypeBuildError;
 
@@ -14,11 +15,15 @@ impl fmt::Display for ChunkTypeBuildError {
 
 impl std::error::Error for ChunkTypeBuildError {}
 
-#[derive(PartialEq,Eq,Debug)]
+/// A validated PNG chunk type. See the PNG spec for more details.
+/// http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+#[derive(Debug,Clone,PartialEq,Eq)]
 pub struct ChunkType(String);
 
 impl ChunkType {
-    fn build(chunk_type: String) -> Result<ChunkType, Error> {
+    /// Creates a new ChunkType. Checks the basic properties that a ChunkType must have according to the PNG spec:
+    /// the ChunkType consists of 4 characters and all four bytes are represented by the characters A-Z or a-z.
+    fn build(chunk_type: String) -> Result<ChunkType> {
         if chunk_type.len() == 4 && chunk_type.chars().all(|c| c.is_ascii_alphabetic()) {
             Ok(ChunkType(chunk_type))
         } else {
@@ -26,30 +31,37 @@ impl ChunkType {
         }
     }
 
+    /// Returns the raw bytes contained in this chunk
     pub fn bytes(&self) -> [u8; 4] {
         self.0.as_bytes().try_into().unwrap()
     }
 
+    /// Returns true if the reserved byte is valid. Other properties is is validated during construction.
     pub fn is_valid(&self) -> bool {
         self.is_reserved_bit_valid()
     }
 
+    /// Returns the property state of the first byte as described in the PNG spec
     pub fn is_critical(&self) -> bool {
         Self::fifth_bit_is_zero(self.0.as_bytes()[0])
     }
 
+    /// Returns the property state of the second byte as described in the PNG spec
     pub fn is_public(&self) -> bool {
         Self::fifth_bit_is_zero(self.0.as_bytes()[1])
     }
 
+    /// Returns the property state of the third byte as described in the PNG spec
     pub fn is_reserved_bit_valid(&self) -> bool {
         Self::fifth_bit_is_zero(self.0.as_bytes()[2])
     }
 
+    /// Returns the property state of the fourth byte as described in the PNG spec
     pub fn is_safe_to_copy(&self) -> bool {
         !Self::fifth_bit_is_zero(self.0.as_bytes()[3])
     }
 
+    /// Check the property state of byte
     fn fifth_bit_is_zero(byte: u8) -> bool {
         byte & 0x20 == 0
     }
@@ -64,7 +76,7 @@ impl fmt::Display for ChunkType {
 impl TryFrom<[u8; 4]> for ChunkType {
     type Error = Error;
 
-    fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; 4]) -> Result<Self> {
         let chunk_type = str::from_utf8(&value[..])?;
         ChunkType::from_str(chunk_type)
     }
@@ -73,7 +85,7 @@ impl TryFrom<[u8; 4]> for ChunkType {
 impl FromStr for ChunkType {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         ChunkType::build(s.to_owned())
     }
 }
