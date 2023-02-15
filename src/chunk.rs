@@ -1,26 +1,17 @@
-use crate::chunk_type::ChunkType;
-use crate::{Error, Result};
 use std::convert::TryFrom;
 use std::fmt;
-use crc::{self, Crc};
 use std::io::{BufReader, Read};
+
+use crate::chunk_type::ChunkType;
+use crate::{Error, Result};
+
+use crc::{self, Crc};
 
 const CRC_HDLC: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
 
-/// Error that may occur if parsing chunk bytes results in a chunk with an invalid CRC 
-#[derive(Debug,Clone)]
-pub struct ChunkInvalidCrcError;
-
-impl fmt::Display for ChunkInvalidCrcError{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "invalid chunk type")
-    }
-}
-
-impl std::error::Error for ChunkInvalidCrcError {}
-
 /// A validated PNG chunk. See the PNG Spec for more details
 /// http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
+#[derive(Debug,Clone)]
 pub struct Chunk {
     length: u32,
     chunk_type: ChunkType,
@@ -30,11 +21,11 @@ pub struct Chunk {
 
 impl Chunk {
     /// Creates a new chunk of type `ChunkType` containing  `data`
-    fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
+    pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let chained_data: Vec<_> = chunk_type.bytes()
             .iter()
-            .cloned()
-            .chain(data.iter().cloned())
+            .copied()
+            .chain(data.iter().copied())
             .collect();
 
         let crc = CRC_HDLC.checksum(&chained_data);
@@ -44,28 +35,28 @@ impl Chunk {
     }
 
     /// The length of the data portion of this chunk
-    fn length(&self) -> u32 {
+    pub fn length(&self) -> u32 {
         self.length
     }
 
     /// The `ChunkType` of this chunk
-    fn chunk_type(&self) -> &ChunkType  {
+    pub fn chunk_type(&self) -> &ChunkType  {
         &self.chunk_type
     }
 
     /// The raw data contained in this chunk in bytes
-    fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &[u8] {
         &self.data
     }
 
     /// The CRC of this chunk
-    fn crc(&self) -> u32 {
+    pub fn crc(&self) -> u32 {
         self.crc
     }
 
     /// Returns the data stored in this chunk as a `String`. This function will return an error
     /// if the stored data is not valid UTF-8.
-    fn data_as_string(&self) -> Result<String> {
+    pub fn data_as_string(&self) -> Result<String> {
         let s = String::from_utf8(self.data.to_owned());
 
         match s {
@@ -80,13 +71,13 @@ impl Chunk {
     /// 2. Chunk type *(4 bytes)*
     /// 3. The data itself *(`length` bytes)*
     /// 4. The CRC of the chunk type and data *(4 bytes)*
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let length = u32::to_be_bytes(self.length);
-        let crc = u32::to_be_bytes(self.length);
+        let crc = u32::to_be_bytes(self.crc);
 
         length.into_iter()
             .chain(self.chunk_type.bytes().into_iter())
-            .chain(self.data.iter().cloned())
+            .chain(self.data.iter().copied())
             .chain(crc.into_iter())
             .collect()
     }
@@ -115,7 +106,7 @@ impl TryFrom<&[u8]> for Chunk {
         let chunk = Chunk::new(chunk_type, data);
 
         if chunk.crc != crc {
-           Err(Box::new(ChunkInvalidCrcError))
+            Err("invalid chunk CRC".into())
         } else {
             Ok(chunk)
         }
@@ -124,7 +115,7 @@ impl TryFrom<&[u8]> for Chunk {
 
 impl fmt::Display for Chunk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(Type: {}; CRC: {}; Length: {})", self.chunk_type, self.crc, self.length)
+        write!(f, "Chunk (Type: {}; CRC: {}; Length: {})", self.chunk_type, self.crc, self.length)
     }
 }
 

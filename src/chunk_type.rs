@@ -1,19 +1,8 @@
 use std::fmt;
 use std::convert::TryFrom;
 use std::str::{self, FromStr};
+
 use crate::{Error, Result};
-
-/// Error that may occur when creating ChunkType if it does not satisfy the properties specified in the PNG spec
-#[derive(Debug,Clone)]
-pub struct ChunkTypeBuildError;
-
-impl fmt::Display for ChunkTypeBuildError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "invalid chunk type")
-    }
-}
-
-impl std::error::Error for ChunkTypeBuildError {}
 
 /// A validated PNG chunk type. See the PNG spec for more details.
 /// http://www.libpng.org/pub/png/spec/1.2/PNG-Structure.html
@@ -27,7 +16,7 @@ impl ChunkType {
         if chunk_type.len() == 4 && chunk_type.chars().all(|c| c.is_ascii_alphabetic()) {
             Ok(ChunkType(chunk_type))
         } else {
-            Err(Box::new(ChunkTypeBuildError))
+            Err("invalid chunk type")?
         }
     }
 
