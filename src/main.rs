@@ -43,7 +43,7 @@ fn main() -> Result<()> {
             chunk_type,
             message,
             output_file,
-        } => pngme::encode(file_path, &chunk_type, &message, output_file)?,
+        } => pngme::encode(file_path, &chunk_type, message, output_file)?,
         Commands::Decode {file_path, chunk_type} => pngme::decode(file_path, &chunk_type)?,
         Commands::Remove {file_path, chunk_type} => pngme::remove(file_path, &chunk_type)?,
         Commands::Print {file_path} => pngme::print_chunks(file_path)?,

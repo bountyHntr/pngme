@@ -31,12 +31,14 @@ impl Png {
     }
 
     /// Creates a `Png` from a file path
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let contents = match fs::read(path) {
-            Ok(contents) => contents,
-            Err(e) => return Err(Box::new(e)),
-        };
+    pub fn from_file<P: AsRef<Path>>(path: &P) -> Result<Self> {
+        let contents = fs::read(path)?;
         Png::try_from(&contents[..])
+    }
+
+    // Save `Png` to a file path
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        Ok(fs::write(path, self.as_bytes())?)
     }
 
     /// Appends a chunk to the end of this `Png` file's `Chunk` list.

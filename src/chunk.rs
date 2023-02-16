@@ -57,12 +57,7 @@ impl Chunk {
     /// Returns the data stored in this chunk as a `String`. This function will return an error
     /// if the stored data is not valid UTF-8.
     pub fn data_as_string(&self) -> Result<String> {
-        let s = String::from_utf8(self.data.to_owned());
-
-        match s {
-            Ok(s) => Ok(s),
-            Err(e) => Err(Box::new(e)),
-        }
+        Ok(String::from_utf8(self.data.to_owned())?)
     }
 
     /// Returns this chunk as a byte sequences described by the PNG spec.

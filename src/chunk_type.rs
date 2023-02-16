@@ -16,7 +16,7 @@ impl ChunkType {
         if chunk_type.len() == 4 && chunk_type.chars().all(|c| c.is_ascii_alphabetic()) {
             Ok(ChunkType(chunk_type))
         } else {
-            Err("invalid chunk type")?
+            Err("invalid chunk type".into())
         }
     }
 
